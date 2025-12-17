@@ -35,36 +35,7 @@ npm run build
 npm run start
 ```
 
-## 🏗️ Struktura projektu
 
-src/
-├── app/              # Next.js App Router
-├── components/       # Komponenty React (shadcn/ui)
-│   ├── SimplePriceCard.tsx    # Karta wyniku pojedynczego
-│   ├── MultiItemResultCard.tsx # Karta wyniku wielu mebli
-│   └── PalletForm.tsx         # Formularz
-├── config/           # JSON konfiguracje
-│   ├── pallet_types.json      # Definicje palet
-│   ├── rate_table.json        # Tabela stawek
-│   ├── surcharges.json        # Bazowe dopłaty (legacy)
-│   └── tod_config.json        # Konfiguracja stawek TOD 2026
-├── domain/           # Logika biznesowa
-│   ├── optimizer.ts           # Dobór palety
-│   ├── pricing.ts             # Kalkulacja cen TOD
-│   ├── binPacking.ts          # Algorytm pakowania 2D
-│   ├── packer.ts              # Silnik pakowania (MaxRects)
-│   ├── helpers.ts             # Funkcje pomocnicze
-│   └── types.ts               # Typy TypeScript
-└── lib/              # Narzędzia
-tests/
-├── unit/             
-│   ├── optimizer.test.ts      # Testy optymalizatora
-│   ├── binPacking.test.ts     # Testy pakowania wielu mebli
-│   └── packer.test.ts         # Testy silnika pakowania
-└── e2e/              
-    ├── main-flow.spec.ts      # Podstawowe scenariusze
-    └── tod-features.spec.ts   # Testy TOD (6 scenariuszy)
-```
 
 ## 💰 Obliczenia cen (TOD 2026 KR)
 
@@ -152,17 +123,16 @@ W pliku `src/domain/pricing.ts`, zmień w `DEFAULT_TOD_CONFIG`:
 
 ```typescript
 // Zmiana z TRANSPORT_RATE na FREIGHT:
-redeliveryPercentBase: 'FREIGHT',  // było: 'TRANSPORT_RATE'
-repickupPercentBase: 'FREIGHT',    // było: 'TRANSPORT_RATE'
+redeliveryPercentBase: 'FREIGHT',
+repickupPercentBase: 'FREIGHT',
 ```
+
 
 ## 📋 Limity i reguły
 
 | Tryb | Maks. wysokość | Maks. waga |
 |------|----------------|------------|
 | Standard | 220 cm | 1500 kg |
-| Winda | 220 cm | 750 kg |
-| Auto 3,5t | 180 cm | 400 kg |
 
 ## 🔧 Technologie
 
@@ -173,7 +143,7 @@ repickupPercentBase: 'FREIGHT',    // było: 'TRANSPORT_RATE'
 - decimal.js (precyzyjne obliczenia finansowe)
 - Vitest + Playwright
 
-## ⚠️ Założenia [ASSUMPTION]
+## ⚠️ Założenia
 
 Następujące elementy zostały zaimplementowane z założeniami (brak jednoznacznej definicji w TOD):
 
@@ -181,31 +151,7 @@ Następujące elementy zostały zaimplementowane z założeniami (brak jednoznac
 2. **Podstawa ponownej dostawy/odbioru** - przyjęto transportRateNet jako "wynagrodzenie" z TOD, konfigurowalne w kodzie
 3. **Walidacja wymiarów dla wniesienia** - używane wymiary po uwzględnieniu zapasu pakowania
 
-## 📝 Niewdrożone opłaty TOD
 
-Poniższe pozycje z TOD nie zostały jeszcze wdrożone:
-
-- Przestój przewoźnika przy załadunku/rozładunku
-- Składowanie przesyłki (max 5 dni)
-- Opłata za korektę parametrów przesyłki
-- Zmiana adresu dostawy
-- Objęcie przesyłki obsługą transportową (expediting)
-- Przepakowanie / zapakowanie przesyłki
-- Podklejenie palety pod przesyłkę
-- Zabezpieczenie sprzętu AGD/RTV
-- Folia, bindy, taśmy i inne materiały
-- Przekazanie zlecenia poza system SP
-- Wykonanie zdjęć przesyłki
-- Ubezpieczenie dodatkowe CARGO
-- Opłata za monitoring (SENT)
-- ADR (25%)
-- TEMP (przewóz w temperaturze)
-- Materiały dodatkowe
-- Podwieszenie przesyłki wózkiem paletowym
-- Dostawa/odbiór GMP (Sobota/Niedziele)
-- Dopłata dla przesyłek >6 mpl / 4 ton
-- Pakiety usług dedykowanych B2C
-- Usługa VIP (gwarantowana dostawa 24h)
 
 ## 🔗 Przydatne linki
 

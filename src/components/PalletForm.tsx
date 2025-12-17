@@ -45,6 +45,7 @@ type FormData = z.infer<typeof formSchema>;
 interface PalletFormProps {
     onSubmit: (data: CalculationInput) => void;
     onReset: () => void;
+    onAddItem?: (data: CalculationInput) => void;
 }
 
 const distanceBandLabels: Record<DistanceBand, string> = {
@@ -54,7 +55,7 @@ const distanceBandLabels: Record<DistanceBand, string> = {
     GT_500: 'powyżej 500 km',
 };
 
-export function PalletForm({ onSubmit, onReset }: PalletFormProps) {
+export function PalletForm({ onSubmit, onReset, onAddItem }: PalletFormProps) {
     const {
         register,
         handleSubmit,
@@ -202,13 +203,36 @@ export function PalletForm({ onSubmit, onReset }: PalletFormProps) {
             </div>
 
             {/* Buttons */}
-            <div className="flex gap-3">
-                <Button type="submit" className="flex-1">
-                    Oblicz
-                </Button>
-                <Button type="button" variant="outline" onClick={handleReset}>
-                    Reset
-                </Button>
+            <div className="flex flex-col gap-2">
+                <div className="flex gap-3">
+                    <Button type="submit" className="flex-1">
+                        Oblicz
+                    </Button>
+                    <Button type="button" variant="outline" onClick={handleReset}>
+                        Reset
+                    </Button>
+                </div>
+                {onAddItem && (
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        className="w-full"
+                        onClick={handleSubmit((data) => {
+                            const formData = data as FormData;
+                            onAddItem({
+                                lengthCm: formData.lengthCm,
+                                widthCm: formData.widthCm,
+                                heightCm: formData.heightCm,
+                                weightKg: formData.weightKg,
+                                distanceBand: formData.distanceBand,
+                                options: { lift: false, van35: false },
+                                packagingMarginCm: formData.packagingMarginCm,
+                            });
+                        })}
+                    >
+                        ➕ Dodaj mebel do listy
+                    </Button>
+                )}
             </div>
         </form>
     );

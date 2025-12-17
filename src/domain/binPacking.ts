@@ -150,25 +150,86 @@ function canAllFitOnOnePallet(
     }
 
     // Construct final placements
+    // Calculate bounding box of packed items
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    packedResult.forEach(p => {
+        minX = Math.min(minX, p.x);
+        maxX = Math.max(maxX, p.x + p.width);
+        minY = Math.min(minY, p.y);
+        maxY = Math.max(maxY, p.y + p.height);
+    });
+
+    const boundingWidth = maxX - minX;
+    const boundingHeight = maxY - minY;
+
+    // Calculate offests to center the bounding box on the pallet
+    // Pallet dimensions: palletCm.widthCm x palletCm.lengthCm
+    // Note: Packer was initialized with (width, length)
+    // Center items per "row" (group of items overlapping in Y)
+    const remainingForGrouping = [...packedResult];
+    const groups: (typeof packedResult)[] = [];
+
+    while (remainingForGrouping.length > 0) {
+        remainingForGrouping.sort((a, b) => a.y - b.y);
+        const seed = remainingForGrouping.shift()!;
+        const group = [seed];
+        const queue = [seed];
+
+        while (queue.length > 0) {
+            const current = queue.pop()!;
+
+            for (let i = remainingForGrouping.length - 1; i >= 0; i--) {
+                const other = remainingForGrouping[i];
+                const overlap = (current.y < other.y + other.height) && (current.y + current.height > other.y);
+
+                if (overlap) {
+                    const removed = remainingForGrouping.splice(i, 1)[0];
+                    group.push(removed);
+                    queue.push(removed);
+                }
+            }
+        }
+        groups.push(group);
+    }
+
+    const finalPositions = new Map<string, { x: number, y: number }>();
+
+    groups.forEach(group => {
+        let minX = Infinity, maxX = -Infinity;
+        group.forEach(p => {
+            minX = Math.min(minX, p.x);
+            maxX = Math.max(maxX, p.x + p.width);
+        });
+
+        const groupWidth = maxX - minX;
+        const groupOffsetX = (Math.round(palletCm.widthCm) - groupWidth) / 2 - minX;
+
+        group.forEach(p => {
+            finalPositions.set(p.id, { x: p.x + groupOffsetX, y: p.y });
+        });
+    });
+
+    let minGlobalY = Infinity, maxGlobalY = -Infinity;
+    packedResult.forEach(p => {
+        minGlobalY = Math.min(minGlobalY, p.y);
+        maxGlobalY = Math.max(maxGlobalY, p.y + p.height);
+    });
+    const finalBoundingHeight = maxGlobalY - minGlobalY;
+    const globalOffsetY = (Math.round(palletCm.lengthCm) - finalBoundingHeight) / 2 - minGlobalY;
+
     const placements: ItemPlacement[] = packedResult.map(packed => {
         const original = preparedItems.find(p => p.id === packed.id)!;
 
-        // If packer rotated it, it swapped Width and Length relative to the input footprint.
-        // We need to reflect this in the final orientation if it was a 90 degree turn on the floor.
-        // But our "orientation" from check3DFit already decided the 3D aspect.
-        // The Packer rotation is just a 2D rotation of that 3D footprint.
-        // So if packed.rotated is true, we simply swap the displayed dimensions on the plot.
-
         return {
             item: original.originalItem,
-            orientation: original.orientation, // This is the 3D orientation (e.g. tilted)
+            orientation: original.orientation,
             orientationLabel: original.orientationLabel,
             warnings: original.warnings,
             footprintWidthCm: packed.width, // X dimension
             footprintLengthCm: packed.height, // Y dimension
             heightCm: Math.round(original.footprint.height),
-            positionX: packed.x,
-            positionY: packed.y
+            positionX: finalPositions.get(packed.id)!.x,
+            positionY: finalPositions.get(packed.id)!.y + globalOffsetY
         };
     });
 

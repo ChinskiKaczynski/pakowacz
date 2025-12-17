@@ -38,6 +38,7 @@ const formSchema = z.object({
     packagingMarginCm: z.coerce.number().min(0).max(50),
     lift: z.boolean(),
     van35: z.boolean(),
+    carryIn: z.boolean(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -74,6 +75,7 @@ export function PalletForm({ onSubmit, onReset, onAddItem }: PalletFormProps) {
             packagingMarginCm: 5,
             lift: false,
             van35: false,
+            carryIn: false,
         },
     });
 
@@ -90,6 +92,7 @@ export function PalletForm({ onSubmit, onReset, onAddItem }: PalletFormProps) {
             options: {
                 lift: false,
                 van35: false,
+                carryIn: formData.carryIn,
             },
             packagingMarginCm: formData.packagingMarginCm,
         });
@@ -202,6 +205,18 @@ export function PalletForm({ onSubmit, onReset, onAddItem }: PalletFormProps) {
                 />
             </div>
 
+            {/* Carry-in service */}
+            <div className="flex items-center space-x-2">
+                <Checkbox
+                    id="carryIn"
+                    checked={watch('carryIn')}
+                    onCheckedChange={(checked) => setValue('carryIn', !!checked)}
+                />
+                <Label htmlFor="carryIn" className="text-sm font-medium cursor-pointer">
+                    Wniesienie/Zniesienie
+                </Label>
+            </div>
+
             {/* Buttons */}
             <div className="flex flex-col gap-2">
                 <div className="flex gap-3">
@@ -225,7 +240,7 @@ export function PalletForm({ onSubmit, onReset, onAddItem }: PalletFormProps) {
                                 heightCm: formData.heightCm,
                                 weightKg: formData.weightKg,
                                 distanceBand: formData.distanceBand,
-                                options: { lift: false, van35: false },
+                                options: { lift: false, van35: false, carryIn: formData.carryIn },
                                 packagingMarginCm: formData.packagingMarginCm,
                             });
                         })}

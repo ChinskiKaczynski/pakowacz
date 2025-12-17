@@ -64,6 +64,7 @@ export interface CalculationInput {
   options: {
     lift: boolean;
     van35: boolean;
+    carryIn: boolean;
   };
   packagingMarginCm: number;
 }
@@ -155,6 +156,7 @@ export interface MultiItemInput {
   options: {
     lift: boolean;
     van35: boolean;
+    carryIn: boolean;
   };
   packagingMarginCm: number;
 }

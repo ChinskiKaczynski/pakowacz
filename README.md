@@ -62,10 +62,7 @@ Ustawienia są zapisywane w localStorage przeglądarki.
 |--------|-----|-----------|------|
 | Korekta paliwowa | % od frachtu | 20.02% | Konfigurowalna |
 | Opłata drogowa | % od frachtu | 14.43% | Konfigurowalna |
-| Dodatek sezonowy | % od frachtu | 6.5% | Włączony, można wyłączyć |
-| Ponowna dostawa | 140% × attempts | Wyłączona | 40% + 100% za każdą próbę |
-| Ponowny odbiór | 140% × attempts | Wyłączona | 40% + 100% za każdą próbę |
-| Wniesienie/Zniesienie | Wg progów wagowych | Wyłączona | Tabela stawek + dopłata 60zł |
+| Wniesienie/Zniesienie | Wg progów wagowych | Checkbox | Liczone per mebel |
 
 ### Wniesienie/Zniesienie - progi wagowe (netto)
 
@@ -100,31 +97,16 @@ Ustawienia są zapisywane w localStorage przeglądarki.
 }
 ```
 
-### Dodawanie nowej dopłaty TOD
+### Konfiguracja stawek TOD
 
-1. Dodaj definicję w `src/config/tod_kr_2026.json`:
+Edytuj plik `src/config/tod_config.json`:
 ```json
 {
-  "id": "nowa_oplata",
-  "label": "Nowa opłata",
-  "category": "CUSTOM",
-  "type": "FLAT",
-  "value": 25,
-  "defaultEnabled": false,
-  "notes": "Opis nowej opłaty"
+  "fuelPercent": 20.02,
+  "roadPercent": 14.43,
+  "vatPercent": 23,
+  "minimumNetPrice": 40
 }
-```
-
-2. Obsłuż nowy typ w `src/domain/pricing.ts`
-
-### Zmiana podstawy procentowej dla ponownej dostawy/odbioru
-
-W pliku `src/domain/pricing.ts`, zmień w `DEFAULT_TOD_CONFIG`:
-
-```typescript
-// Zmiana z TRANSPORT_RATE na FREIGHT:
-redeliveryPercentBase: 'FREIGHT',
-repickupPercentBase: 'FREIGHT',
 ```
 
 

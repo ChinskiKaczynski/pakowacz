@@ -1,11 +1,38 @@
 import { MultiItemResult } from '@/domain/types';
 import { PalletVisualizer } from '@/components/PalletVisualizer';
+import { calculateCarryPrice, type CarryPriceResult } from '@/domain/carryService';
 
 interface MultiItemResultCardProps {
     result: MultiItemResult;
+    carryIn?: boolean;
 }
 
-export function MultiItemResultCard({ result }: MultiItemResultCardProps) {
+export function MultiItemResultCard({ result, carryIn = false }: MultiItemResultCardProps) {
+    // Calculate carry prices for all items if carryIn is enabled
+    const carryPrices: Map<string, CarryPriceResult> = new Map();
+    let totalCarryGross = 0;
+
+    if (carryIn) {
+        result.allocations.forEach(alloc => {
+            alloc.items.forEach(placement => {
+                const item = placement.item;
+                const carryPrice = calculateCarryPrice(
+                    item.weightKg,
+                    item.lengthCm,
+                    item.widthCm,
+                    item.heightCm
+                );
+                carryPrices.set(item.id, carryPrice);
+                if (carryPrice.available) {
+                    totalCarryGross += parseFloat(carryPrice.totalGross);
+                }
+            });
+        });
+    }
+
+    const transportGross = parseFloat(result.totalGross);
+    const combinedGross = (transportGross + totalCarryGross).toFixed(2);
+
     return (
         <div className="space-y-4">
             {/* Summary */}
@@ -17,15 +44,28 @@ export function MultiItemResultCard({ result }: MultiItemResultCardProps) {
                         </h2>
                         <p className="text-sm text-blue-700 dark:text-blue-400">
                             {result.palletCount} {result.palletCount === 1 ? 'paleta' : 'palet'}
+                            {carryIn && ' + wniesienie'}
                         </p>
                     </div>
                     <div className="text-right">
                         <p className="text-2xl font-bold text-blue-800 dark:text-blue-300">
-                            {result.totalGross} PLN
+                            {carryIn ? combinedGross : result.totalGross} PLN
                         </p>
                         <p className="text-xs text-muted-foreground">razem brutto</p>
                     </div>
                 </div>
+                {carryIn && totalCarryGross > 0 && (
+                    <div className="mt-2 pt-2 border-t border-blue-200 text-sm">
+                        <div className="flex justify-between text-blue-700">
+                            <span>Transport:</span>
+                            <span>{result.totalGross} PLN</span>
+                        </div>
+                        <div className="flex justify-between text-blue-700">
+                            <span>Wniesienie ({result.allocations.reduce((sum, a) => sum + a.items.length, 0)} szt.):</span>
+                            <span>{totalCarryGross.toFixed(2)} PLN</span>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Warnings */}
@@ -66,30 +106,45 @@ export function MultiItemResultCard({ result }: MultiItemResultCardProps) {
 
                     {/* Items with orientation and warnings */}
                     <div className="space-y-2">
-                        {alloc.items.map((placement, j) => (
-                            <div key={j} className="border-l-2 border-green-300 pl-2">
-                                <p className="text-sm font-medium">
-                                    {placement.item.name}
-                                    <span className="text-muted-foreground ml-1">
-                                        ({placement.item.lengthCm}×{placement.item.widthCm}×{placement.item.heightCm}cm)
-                                    </span>
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    📐 Podstawa: {placement.footprintLengthCm}×{placement.footprintWidthCm}cm,
-                                    wysokość: {placement.heightCm}cm
-                                    {placement.orientationLabel !== 'Normalnie' && (
-                                        <span className="ml-1 text-blue-600"> • {placement.orientationLabel}</span>
+                        {alloc.items.map((placement, j) => {
+                            const itemCarryPrice = carryPrices.get(placement.item.id);
+                            return (
+                                <div key={j} className="border-l-2 border-green-300 pl-2">
+                                    <p className="text-sm font-medium">
+                                        {placement.item.name}
+                                        <span className="text-muted-foreground ml-1">
+                                            ({placement.item.lengthCm}×{placement.item.widthCm}×{placement.item.heightCm}cm, {placement.item.weightKg}kg)
+                                        </span>
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        📐 Podstawa: {placement.footprintLengthCm}×{placement.footprintWidthCm}cm,
+                                        wysokość: {placement.heightCm}cm
+                                        {placement.orientationLabel !== 'Normalnie' && (
+                                            <span className="ml-1 text-blue-600"> • {placement.orientationLabel}</span>
+                                        )}
+                                    </p>
+                                    {/* Carry price for this item */}
+                                    {itemCarryPrice && itemCarryPrice.available && (
+                                        <p className="text-xs text-blue-600">
+                                            📦 Wniesienie: {itemCarryPrice.totalGross} PLN
+                                            {parseFloat(itemCarryPrice.surcharge) > 0 && ` (w tym dopłata ${itemCarryPrice.surcharge} zł)`}
+                                        </p>
                                     )}
-                                </p>
-                                {placement.warnings.length > 0 && (
-                                    <div className="mt-1">
-                                        {placement.warnings.map((w, k) => (
-                                            <p key={k} className="text-xs text-amber-600">⚠️ {w}</p>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                                    {itemCarryPrice && !itemCarryPrice.available && (
+                                        <p className="text-xs text-red-600">
+                                            ❌ Wniesienie niedostępne: {itemCarryPrice.warnings[0]}
+                                        </p>
+                                    )}
+                                    {placement.warnings.length > 0 && (
+                                        <div className="mt-1">
+                                            {placement.warnings.map((w, k) => (
+                                                <p key={k} className="text-xs text-amber-600">⚠️ {w}</p>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
 
                     <p className="text-xs text-muted-foreground mt-2 pt-2 border-t">
@@ -115,3 +170,4 @@ export function MultiItemResultCard({ result }: MultiItemResultCardProps) {
         </div>
     );
 }
+

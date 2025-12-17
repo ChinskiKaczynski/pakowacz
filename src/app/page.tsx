@@ -11,6 +11,7 @@ import { MultiItemResultCard } from '@/components/MultiItemResultCard';
 import { optimize } from '@/domain/optimizer';
 import { optimizeMultiItem } from '@/domain/binPacking';
 import { APP_CONFIG } from '@/config/constants';
+import { calculateCarryPrice, type CarryPriceResult } from '@/domain/carryService';
 import type { CalculationInput, OptimizerResult, FurnitureItem, MultiItemResult, DistanceBand, RateTableConfig, PalletTypesConfig } from '@/domain/types';
 import palletTypes from '@/config/pallet_types.json';
 import rateTable from '@/config/rate_table.json';
@@ -20,12 +21,14 @@ interface SingleResult {
   type: 'single';
   optimizerResult: OptimizerResult;
   input: CalculationInput;
+  carryPrice?: CarryPriceResult;
 }
 
 interface MultiResult {
   type: 'multi';
   multiResult: MultiItemResult;
   itemCount: number;
+  carryIn: boolean;
 }
 
 type Result = SingleResult | MultiResult;
@@ -134,6 +137,9 @@ export default function Home() {
       type: 'single',
       optimizerResult,
       input,
+      carryPrice: input.options.carryIn
+        ? calculateCarryPrice(input.weightKg, input.lengthCm, input.widthCm, input.heightCm)
+        : undefined,
     });
   }, []);
 
@@ -145,7 +151,7 @@ export default function Home() {
       {
         items,
         distanceBand: (lastInput.distanceBand || 'LE_100') as DistanceBand,
-        options: lastInput.options || { lift: false, van35: false },
+        options: lastInput.options || { lift: false, van35: false, carryIn: false },
         packagingMarginCm: lastInput.packagingMarginCm || 5,
       },
       palletTypes as PalletTypesConfig,
@@ -157,6 +163,7 @@ export default function Home() {
       type: 'multi',
       multiResult,
       itemCount: items.length,
+      carryIn: lastInput.options?.carryIn || false,
     });
   }, [items, lastInput]);
 
@@ -343,6 +350,7 @@ Razem brutto: ${result.multiResult.totalGross} PLN
                       category={getCategoryName(result.optimizerResult.recommended.pallet.category)}
                       orientationLabel={result.optimizerResult.recommended.orientationLabel}
                       warnings={result.optimizerResult.recommended.warnings}
+                      carryPrice={result.carryPrice}
                     />
 
                     {/* Add more items button */}
@@ -373,7 +381,7 @@ Razem brutto: ${result.multiResult.totalGross} PLN
             ) : (
               <>
                 {/* Multi-item result */}
-                <MultiItemResultCard result={result.multiResult} />
+                <MultiItemResultCard result={result.multiResult} carryIn={result.carryIn} />
 
                 <div className="flex gap-2">
                   <Button

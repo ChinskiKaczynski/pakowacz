@@ -1,0 +1,13 @@
+{
+    "fuelPercent": 20.02,
+    "roadPercent": 14.43,
+    "vatPercent": 23,
+    "minimumNetPrice": 40,
+    "validFrom": "2026-01-01",
+    "validTo": "2026-12-31",
+    "notes": {
+        "seasonal": "Dodatek sezonowy 6.5% - wdrożony w TOD 2026 KR",
+        "tod": "TOD 2026 KR wdrożony - patrz tod_kr_2026.json",
+        "source": "Wartości % publikowane na www.suus.com - należy aktualizować w UI"
+    }
+}

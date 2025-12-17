@@ -1,0 +1,148 @@
+{
+  "pallets": [
+    {
+      "id": "STANDARD_120x80",
+      "displayName": "Paleta Standard 120×80",
+      "lengthM": 1.2,
+      "widthM": 0.8,
+      "maxHeightCm": 220,
+      "maxWeightKg": 1500,
+      "category": "STANDARD"
+    },
+    {
+      "id": "STANDARD_120x100",
+      "displayName": "Paleta Standard 120×100",
+      "lengthM": 1.2,
+      "widthM": 1.0,
+      "maxHeightCm": 220,
+      "maxWeightKg": 1500,
+      "category": "STANDARD"
+    },
+    {
+      "id": "STANDARD_100x40",
+      "displayName": "Paleta Standard 100×40",
+      "lengthM": 1.0,
+      "widthM": 0.4,
+      "maxHeightCm": 220,
+      "maxWeightKg": 1500,
+      "category": "STANDARD"
+    },
+    {
+      "id": "STANDARD_120x45",
+      "displayName": "Paleta Standard 120×45",
+      "lengthM": 1.2,
+      "widthM": 0.45,
+      "maxHeightCm": 220,
+      "maxWeightKg": 1500,
+      "category": "STANDARD"
+    },
+    {
+      "id": "STANDARD_100x80",
+      "displayName": "Paleta Standard 100×80",
+      "lengthM": 1.0,
+      "widthM": 0.8,
+      "maxHeightCm": 220,
+      "maxWeightKg": 1500,
+      "category": "STANDARD"
+    },
+    {
+      "id": "HALF_80x60",
+      "displayName": "Półpaleta 80×60",
+      "lengthM": 0.8,
+      "widthM": 0.6,
+      "maxHeightCm": 220,
+      "maxWeightKg": 150,
+      "category": "HALF"
+    },
+    {
+      "id": "LONG_WIDE_240x80",
+      "displayName": "Paleta Długa Szeroka 240×80",
+      "lengthM": 2.4,
+      "widthM": 0.8,
+      "maxHeightCm": 220,
+      "maxWeightKg": 300,
+      "category": "LONG_WIDE"
+    },
+    {
+      "id": "LONG_WIDE_265x80",
+      "displayName": "Paleta Długa Szeroka 265×80",
+      "lengthM": 2.65,
+      "widthM": 0.8,
+      "maxHeightCm": 220,
+      "maxWeightKg": 300,
+      "category": "LONG_WIDE"
+    },
+    {
+      "id": "LONG_WIDE_245x80",
+      "displayName": "Paleta Długa Szeroka 245×80",
+      "lengthM": 2.45,
+      "widthM": 0.8,
+      "maxHeightCm": 220,
+      "maxWeightKg": 300,
+      "category": "LONG_WIDE"
+    },
+    {
+      "id": "LONG_WIDE_220x80",
+      "displayName": "Paleta Długa Szeroka 220×80",
+      "lengthM": 2.2,
+      "widthM": 0.8,
+      "maxHeightCm": 220,
+      "maxWeightKg": 300,
+      "category": "LONG_WIDE"
+    },
+    {
+      "id": "LONG_WIDE_160x120",
+      "displayName": "Paleta Długa Szeroka 160×120",
+      "lengthM": 1.6,
+      "widthM": 1.2,
+      "maxHeightCm": 220,
+      "maxWeightKg": 300,
+      "category": "LONG_WIDE"
+    },
+    {
+      "id": "LONG_WIDE_160x100",
+      "displayName": "Paleta Długa Szeroka 160×100",
+      "lengthM": 1.6,
+      "widthM": 1.0,
+      "maxHeightCm": 220,
+      "maxWeightKg": 300,
+      "category": "LONG_WIDE"
+    },
+    {
+      "id": "LONG_NARROW_265x45",
+      "displayName": "Paleta Długa Wąska 265×45",
+      "lengthM": 2.65,
+      "widthM": 0.45,
+      "maxHeightCm": 220,
+      "maxWeightKg": 200,
+      "category": "LONG_NARROW"
+    },
+    {
+      "id": "LONG_NARROW_225x45",
+      "displayName": "Paleta Długa Wąska 225×45",
+      "lengthM": 2.25,
+      "widthM": 0.45,
+      "maxHeightCm": 220,
+      "maxWeightKg": 200,
+      "category": "LONG_NARROW"
+    },
+    {
+      "id": "LONG_NARROW_245x45",
+      "displayName": "Paleta Długa Wąska 245×45",
+      "lengthM": 2.45,
+      "widthM": 0.45,
+      "maxHeightCm": 220,
+      "maxWeightKg": 200,
+      "category": "LONG_NARROW"
+    },
+    {
+      "id": "PALLET_120_120",
+      "displayName": "Paleta 120×120",
+      "lengthM": 1.2,
+      "widthM": 1.2,
+      "maxHeightCm": 220,
+      "maxWeightKg": 300,
+      "category": "PALLET_120_120"
+    }
+  ]
+}

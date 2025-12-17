@@ -18,6 +18,7 @@ import type {
     UnallocatedItem,
 } from './types';
 import { check3DFit, palletDimensionsToCm, getEffectiveLimits, findRate, calculatePrice } from './helpers';
+import { Packer } from './packer';
 
 const PALLET_BASE_HEIGHT_CM = 15;
 
@@ -65,6 +66,10 @@ function itemFitsOnPallet(
  * Simple check: can all items fit on one pallet together?
  * Uses naive "sum of footprints" approach as approximation
  */
+/**
+ * Check: can all items fit on one pallet together?
+ * Uses the 2D Packer to verify geometric fit and calculate positions.
+ */
 function canAllFitOnOnePallet(
     items: FurnitureItem[],
     pallet: PalletType,
@@ -74,7 +79,6 @@ function canAllFitOnOnePallet(
     const palletCm = palletDimensionsToCm(pallet);
     const limits = getEffectiveLimits(options, pallet.maxHeightCm, pallet.maxWeightKg);
     const availableHeight = limits.maxHeightCm - PALLET_BASE_HEIGHT_CM;
-    const palletArea = palletCm.lengthCm * palletCm.widthCm;
 
     // Check total weight
     const totalWeight = items.reduce((sum, item) => sum + item.weightKg, 0);
@@ -82,12 +86,11 @@ function canAllFitOnOnePallet(
         return { fits: false, placements: [], layoutNotes: ['Przekroczony limit wagi'] };
     }
 
-    // Check each item fits individually and calculate total area needed
-    const placements: ItemPlacement[] = [];
+    // Prepare items for usage in checking individual fit (height check) and then packing
+    const preparedItems: { id: string; w: number; h: number; originalItem: FurnitureItem; orientation: ItemOrientation; orientationLabel: string; footprint: { length: number; width: number; height: number }; warnings: string[] }[] = [];
     const layoutNotes: string[] = [];
-    let totalAreaNeeded = 0;
-    let maxHeight = 0;
 
+    // First pass: Check if each item fits individually in some orientation
     for (const item of items) {
         const dims = getEffectiveDimensions(item, marginCm);
         const fitResult = check3DFit(
@@ -103,44 +106,77 @@ function canAllFitOnOnePallet(
             return { fits: false, placements: [], layoutNotes: [`${item.name} nie mieści się`] };
         }
 
-        // Calculate footprint based on orientation
         const footprint = getFootprintForOrientation(dims, fitResult.orientation);
-        totalAreaNeeded += footprint.length * footprint.width;
-        maxHeight = Math.max(maxHeight, footprint.height);
-
-        // Generate warnings for this placement
-        const itemWarnings: string[] = [];
         const orientationLabel = getOrientationLabel(fitResult.orientation);
+        const itemWarnings: string[] = [];
 
-        // Near height limit warning
         if (footprint.height >= availableHeight - 10) {
             itemWarnings.push(`Na styk z limitem wysokości (${footprint.height}cm / ${availableHeight}cm)`);
         }
-
-        // Tilted orientation warning
         if (fitResult.orientation.includes('tilted')) {
             itemWarnings.push(`Musi być ${orientationLabel.toLowerCase()}`);
         }
 
-        placements.push({
-            item,
+        preparedItems.push({
+            id: item.id,
+            w: Math.round(footprint.width),
+            h: Math.round(footprint.length), // Packer expects w/h, we map footprint width/length
+            originalItem: item,
             orientation: fitResult.orientation,
             orientationLabel,
-            warnings: itemWarnings,
-            footprintLengthCm: Math.round(footprint.length),
-            footprintWidthCm: Math.round(footprint.width),
-            heightCm: Math.round(footprint.height),
+            footprint,
+            warnings: itemWarnings
         });
     }
 
-    // Simple heuristic: items fit if total area <= pallet area
-    const fits = totalAreaNeeded <= palletArea && maxHeight <= availableHeight;
+    // Second pass: Use Packer to check if they all fit on the 2D surface
+    // Note: Packer coordinates are w=x-axis, h=y-axis. We map pallet Width -> Packer W, pallet Length -> Packer H
+    // However, usually "Length" is the longer side. Let's stick to X=Width, Y=Length for visualization consistency if that matches SVG.
+    // SVG coordinate system: 0,0 top-left.
+    const packer = new Packer(Math.round(palletCm.widthCm), Math.round(palletCm.lengthCm));
 
-    if (fits && placements.length > 1) {
-        layoutNotes.push('⚠️ Wymaga starannego ułożenia obok siebie');
+    // We map item footprint width -> w, length -> h.
+    // Packer will try to rotate them if needed.
+    const packerInput = preparedItems.map(p => ({
+        id: p.id,
+        w: p.w,
+        h: p.h
+    }));
+
+    const packedResult = packer.pack(packerInput);
+
+    if (!packedResult) {
+        return { fits: false, placements: [], layoutNotes: ['Meble nie mieszczą się na powierzchni palety'] };
     }
 
-    return { fits, placements, layoutNotes };
+    // Construct final placements
+    const placements: ItemPlacement[] = packedResult.map(packed => {
+        const original = preparedItems.find(p => p.id === packed.id)!;
+
+        // If packer rotated it, it swapped Width and Length relative to the input footprint.
+        // We need to reflect this in the final orientation if it was a 90 degree turn on the floor.
+        // But our "orientation" from check3DFit already decided the 3D aspect.
+        // The Packer rotation is just a 2D rotation of that 3D footprint.
+        // So if packed.rotated is true, we simply swap the displayed dimensions on the plot.
+
+        return {
+            item: original.originalItem,
+            orientation: original.orientation, // This is the 3D orientation (e.g. tilted)
+            orientationLabel: original.orientationLabel,
+            warnings: original.warnings,
+            footprintWidthCm: packed.width, // X dimension
+            footprintLengthCm: packed.height, // Y dimension
+            heightCm: Math.round(original.footprint.height),
+            positionX: packed.x,
+            positionY: packed.y
+        };
+    });
+
+    if (placements.length > 1) {
+        // layoutNotes.push('⚠️ Rozmieszczenie wg schematu poniżej');
+    }
+
+    return { fits: true, placements, layoutNotes };
 }
 
 /** Get human-readable orientation label */

@@ -5,6 +5,7 @@ import { PalletForm } from '@/components/PalletForm';
 import { FurnitureList, MAX_ITEMS } from '@/components/FurnitureList';
 import { AlternativesSection } from '@/components/AlternativesSection';
 import { RejectedSection } from '@/components/RejectedSection';
+import { PalletVisualizer } from '@/components/PalletVisualizer';
 import { Button } from '@/components/ui/button';
 import { optimize } from '@/domain/optimizer';
 import { optimizeMultiItem } from '@/domain/binPacking';
@@ -542,6 +543,10 @@ function MultiItemResultCard({ result }: { result: MultiItemResult }) {
             <span className="text-lg font-bold text-green-800 dark:text-green-300">
               {alloc.priceBreakdown.grossTotal} PLN
             </span>
+          </div>
+
+          <div className="mb-4 flex justify-center bg-white rounded-lg py-4 border">
+            <PalletVisualizer allocation={alloc} className="max-w-xs" />
           </div>
 
           {/* Layout notes */}

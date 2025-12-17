@@ -1,6 +1,7 @@
 import { MultiItemResult } from '@/domain/types';
 import { PalletVisualizer } from '@/components/PalletVisualizer';
 import { calculateCarryPrice, type CarryPriceResult } from '@/domain/carryService';
+import { APP_CONFIG } from '@/config/constants';
 
 interface MultiItemResultCardProps {
     result: MultiItemResult;
@@ -10,7 +11,7 @@ interface MultiItemResultCardProps {
 export function MultiItemResultCard({ result, carryIn = false }: MultiItemResultCardProps) {
     // Calculate carry prices for all items if carryIn is enabled
     const carryPrices: Map<string, CarryPriceResult> = new Map();
-    let totalCarryGross = 0;
+    let totalCarryNet = 0;
 
     if (carryIn) {
         result.allocations.forEach(alloc => {
@@ -24,14 +25,21 @@ export function MultiItemResultCard({ result, carryIn = false }: MultiItemResult
                 );
                 carryPrices.set(item.id, carryPrice);
                 if (carryPrice.available) {
-                    totalCarryGross += parseFloat(carryPrice.totalGross);
+                    totalCarryNet += parseFloat(carryPrice.totalNet);
                 }
             });
         });
     }
 
+    // Calculate combined totals with VAT from combined net
+    // Use totalNet from result or calculate it from gross
     const transportGross = parseFloat(result.totalGross);
-    const combinedGross = (transportGross + totalCarryGross).toFixed(2);
+    const transportNet = transportGross / (1 + APP_CONFIG.VAT_PERCENT / 100);
+    const combinedNet = transportNet + totalCarryNet;
+    const vatRate = APP_CONFIG.VAT_PERCENT / 100;
+    const combinedVat = (combinedNet * vatRate).toFixed(2);
+    const combinedGross = (combinedNet * (1 + vatRate)).toFixed(2);
+    const totalCarryGross = (totalCarryNet * (1 + vatRate)).toFixed(2);
 
     return (
         <div className="space-y-4">
@@ -54,7 +62,7 @@ export function MultiItemResultCard({ result, carryIn = false }: MultiItemResult
                         <p className="text-xs text-muted-foreground">razem brutto</p>
                     </div>
                 </div>
-                {carryIn && totalCarryGross > 0 && (
+                {carryIn && totalCarryNet > 0 && (
                     <div className="mt-2 pt-2 border-t border-blue-200 text-sm">
                         <div className="flex justify-between text-blue-700">
                             <span>Transport:</span>
@@ -62,7 +70,11 @@ export function MultiItemResultCard({ result, carryIn = false }: MultiItemResult
                         </div>
                         <div className="flex justify-between text-blue-700">
                             <span>Wniesienie ({result.allocations.reduce((sum, a) => sum + a.items.length, 0)} szt.):</span>
-                            <span>{totalCarryGross.toFixed(2)} PLN</span>
+                            <span>{totalCarryGross} PLN</span>
+                        </div>
+                        <div className="flex justify-between text-muted-foreground mt-1">
+                            <span>VAT {APP_CONFIG.VAT_PERCENT}% (od całości):</span>
+                            <span>{combinedVat} PLN</span>
                         </div>
                     </div>
                 )}
@@ -170,4 +182,3 @@ export function MultiItemResultCard({ result, carryIn = false }: MultiItemResult
         </div>
     );
 }
-

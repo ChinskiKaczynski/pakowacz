@@ -21,10 +21,15 @@ export function SimplePriceCard({
     warnings,
     carryPrice,
 }: SimplePriceCardProps) {
-    // Calculate combined total if carry service is enabled
-    const transportGross = parseFloat(pricing.grossTotal);
-    const carryGross = carryPrice?.available ? parseFloat(carryPrice.totalGross) : 0;
-    const combinedGross = (transportGross + carryGross).toFixed(2);
+    // Calculate combined totals with VAT from combined net (transport + carry)
+    const transportNet = parseFloat(pricing.netTotal);
+    const carryNet = carryPrice?.available ? parseFloat(carryPrice.totalNet) : 0;
+    const combinedNet = transportNet + carryNet;
+
+    // VAT calculated from combined net total
+    const vatRate = APP_CONFIG.VAT_PERCENT / 100;
+    const combinedVat = (combinedNet * vatRate).toFixed(2);
+    const combinedGross = (combinedNet * (1 + vatRate)).toFixed(2);
 
     return (
         <div className="rounded-lg bg-green-50 p-4 shadow dark:bg-green-900/20">
@@ -116,8 +121,8 @@ export function SimplePriceCard({
                 )}
 
                 <div className="flex justify-between text-muted-foreground">
-                    <span>VAT {pricing.vat ? (parseFloat(pricing.vat) > 0 ? APP_CONFIG.VAT_PERCENT : 'ZW') : APP_CONFIG.VAT_PERCENT}%:</span>
-                    <span>{pricing.vat} PLN</span>
+                    <span>VAT {APP_CONFIG.VAT_PERCENT}%:</span>
+                    <span>{carryPrice?.available ? combinedVat : pricing.vat} PLN</span>
                 </div>
                 <div className="flex justify-between border-t pt-1 text-lg font-bold">
                     <span>Brutto:</span>

@@ -1,0 +1,8 @@
+{
+    "fuelPercent": 20.02,
+    "roadPercent": 14.43,
+    "vatPercent": 23,
+    "minimumNetPrice": 40,
+    "validFrom": "2024-01-01",
+    "validTo": "2024-12-31"
+}

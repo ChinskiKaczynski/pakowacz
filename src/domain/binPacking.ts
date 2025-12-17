@@ -17,7 +17,8 @@ import type {
     ItemOrientation,
     UnallocatedItem,
 } from './types';
-import { check3DFit, palletDimensionsToCm, getEffectiveLimits, findRate, calculatePrice } from './helpers';
+import { check3DFit, palletDimensionsToCm, getEffectiveLimits } from './helpers';
+import { findRate, calculatePrice } from './pricing';
 import { Packer } from './packer';
 
 const PALLET_BASE_HEIGHT_CM = 15;

@@ -37,27 +37,30 @@ npm run start
 
 ## 🏗️ Struktura projektu
 
-```
 src/
 ├── app/              # Next.js App Router
 ├── components/       # Komponenty React (shadcn/ui)
-│   ├── TODSettingsPanel.tsx   # Panel ustawień TOD
-│   └── PriceBreakdownCard.tsx # Rozbicie ceny z TOD
+│   ├── SimplePriceCard.tsx    # Karta wyniku pojedynczego
+│   ├── MultiItemResultCard.tsx # Karta wyniku wielu mebli
+│   └── PalletForm.tsx         # Formularz
 ├── config/           # JSON konfiguracje
 │   ├── pallet_types.json      # Definicje palet
 │   ├── rate_table.json        # Tabela stawek
 │   ├── surcharges.json        # Bazowe dopłaty (legacy)
-│   └── tod_kr_2026.json       # TOD 2026 KR konfiguracja
+│   └── tod_config.json        # Konfiguracja stawek TOD 2026
 ├── domain/           # Logika biznesowa
 │   ├── optimizer.ts           # Dobór palety
 │   ├── pricing.ts             # Kalkulacja cen TOD
+│   ├── binPacking.ts          # Algorytm pakowania 2D
+│   ├── packer.ts              # Silnik pakowania (MaxRects)
 │   ├── helpers.ts             # Funkcje pomocnicze
 │   └── types.ts               # Typy TypeScript
 └── lib/              # Narzędzia
 tests/
 ├── unit/             
 │   ├── optimizer.test.ts      # Testy optymalizatora
-│   └── pricing.test.ts        # Testy kalkulacji TOD (22 testów)
+│   ├── binPacking.test.ts     # Testy pakowania wielu mebli
+│   └── packer.test.ts         # Testy silnika pakowania
 └── e2e/              
     ├── main-flow.spec.ts      # Podstawowe scenariusze
     └── tod-features.spec.ts   # Testy TOD (6 scenariuszy)

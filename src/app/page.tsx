@@ -5,15 +5,16 @@ import { PalletForm } from '@/components/PalletForm';
 import { FurnitureList, MAX_ITEMS } from '@/components/FurnitureList';
 import { AlternativesSection } from '@/components/AlternativesSection';
 import { RejectedSection } from '@/components/RejectedSection';
-import { PalletVisualizer } from '@/components/PalletVisualizer';
 import { Button } from '@/components/ui/button';
+import { SimplePriceCard } from '@/components/SimplePriceCard';
+import { MultiItemResultCard } from '@/components/MultiItemResultCard';
 import { optimize } from '@/domain/optimizer';
 import { optimizeMultiItem } from '@/domain/binPacking';
 import { APP_CONFIG } from '@/config/constants';
-import type { CalculationInput, OptimizerResult, PriceBreakdown, FurnitureItem, MultiItemResult } from '@/domain/types';
+import type { CalculationInput, OptimizerResult, FurnitureItem, MultiItemResult, DistanceBand, RateTableConfig, PalletTypesConfig } from '@/domain/types';
 import palletTypes from '@/config/pallet_types.json';
 import rateTable from '@/config/rate_table.json';
-import type { PalletTypesConfig, RateTableConfig, RateCategory, DistanceBand } from '@/domain/types';
+import todConfig from '@/config/tod_config.json';
 
 interface SingleResult {
   type: 'single';
@@ -29,25 +30,25 @@ interface MultiResult {
 
 type Result = SingleResult | MultiResult;
 
-const getCategoryName = (category: RateCategory): string => {
-  const names: Record<RateCategory, string> = {
+const getCategoryName = (category: string): string => {
+  const names: Record<string, string> = {
     STANDARD: 'Standard',
     HALF: 'Półpaleta',
     LONG_WIDE: 'Długa Szeroka',
     LONG_NARROW: 'Długa Wąska',
     PALLET_120_120: 'Paleta 120×120',
   };
-  return names[category];
+  return names[category] || category;
 };
 
-// Default surcharges for pricing
+// Default surcharges from config
 const DEFAULT_SURCHARGES = {
-  fuelPercent: 20.02,
-  roadPercent: 14.43,
-  vatPercent: APP_CONFIG.VAT_PERCENT,
-  minimumNetPrice: APP_CONFIG.MINIMUM_NET_PRICE,
-  validFrom: APP_CONFIG.VALID_FROM,
-  validTo: APP_CONFIG.VALID_TO,
+  fuelPercent: todConfig.fuelPercent,
+  roadPercent: todConfig.roadPercent,
+  vatPercent: todConfig.vatPercent,
+  minimumNetPrice: todConfig.minimumNetPrice,
+  validFrom: todConfig.validFrom,
+  validTo: todConfig.validTo,
 };
 
 let itemIdCounter = 0;
@@ -271,8 +272,6 @@ Razem brutto: ${result.multiResult.totalGross} PLN
     }
   }, [result]);
 
-  const isMultiMode = items.length > 0;
-
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="mx-auto max-w-lg px-4 py-6">
@@ -416,196 +415,5 @@ Razem brutto: ${result.multiResult.totalGross} PLN
         </footer>
       </div>
     </main>
-  );
-}
-
-// Simplified price card
-function SimplePriceCard({
-  pricing,
-  palletName,
-  palletDimensions,
-  category,
-  orientationLabel,
-  warnings,
-}: {
-  pricing: PriceBreakdown;
-  palletName: string;
-  palletDimensions: string;
-  category: string;
-  orientationLabel: string | null;
-  warnings: string[];
-}) {
-  return (
-    <div className="rounded-lg bg-green-50 p-4 shadow dark:bg-green-900/20">
-      <div className="mb-3 flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-bold text-green-800 dark:text-green-300">
-            ✓ Rekomendacja
-          </h2>
-          <p className="text-sm text-green-700 dark:text-green-400">
-            {palletName} ({palletDimensions})
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Kategoria: {category}
-            {orientationLabel && ` • ${orientationLabel}`}
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-2xl font-bold text-green-800 dark:text-green-300">
-            {pricing.grossTotal} PLN
-          </p>
-          <p className="text-xs text-muted-foreground">brutto</p>
-        </div>
-      </div>
-
-      {warnings.length > 0 && (
-        <div className="mb-3 rounded bg-amber-100 p-2 dark:bg-amber-900/30">
-          {warnings.map((w, i) => (
-            <p key={i} className="text-xs text-amber-700 dark:text-amber-400">
-              ⚠️ {w}
-            </p>
-          ))}
-        </div>
-      )}
-
-      <div className="space-y-1 border-t pt-3 text-sm">
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Fracht netto:</span>
-          <span>{pricing.afterMinimum} PLN</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Korekta paliwowa:</span>
-          <span>{pricing.fuelSurcharge} PLN</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Opłata drogowa:</span>
-          <span>{pricing.roadSurcharge} PLN</span>
-        </div>
-        <div className="flex justify-between border-t pt-1 font-medium">
-          <span>Netto:</span>
-          <span>{pricing.netTotal} PLN</span>
-        </div>
-        <div className="flex justify-between text-muted-foreground">
-          <span>VAT {APP_CONFIG.VAT_PERCENT}%:</span>
-          <span>{pricing.vat} PLN</span>
-        </div>
-        <div className="flex justify-between border-t pt-1 text-lg font-bold">
-          <span>Brutto:</span>
-          <span>{pricing.grossTotal} PLN</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Multi-item result card
-function MultiItemResultCard({ result }: { result: MultiItemResult }) {
-  return (
-    <div className="space-y-4">
-      {/* Summary */}
-      <div className="rounded-lg bg-blue-50 p-4 shadow dark:bg-blue-900/20">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-bold text-blue-800 dark:text-blue-300">
-              📦 Podsumowanie
-            </h2>
-            <p className="text-sm text-blue-700 dark:text-blue-400">
-              {result.palletCount} {result.palletCount === 1 ? 'paleta' : 'palet'}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-2xl font-bold text-blue-800 dark:text-blue-300">
-              {result.totalGross} PLN
-            </p>
-            <p className="text-xs text-muted-foreground">razem brutto</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Warnings */}
-      {result.warnings.length > 0 && (
-        <div className="rounded-lg bg-amber-100 p-3 dark:bg-amber-900/30">
-          {result.warnings.map((w, i) => (
-            <p key={i} className="text-sm text-amber-700 dark:text-amber-400">
-              ⚠️ {w}
-            </p>
-          ))}
-        </div>
-      )}
-
-      {/* Allocations */}
-      {result.allocations.map((alloc, i) => (
-        <div key={i} className="rounded-lg bg-green-50 p-4 shadow dark:bg-green-900/20">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-medium text-green-800 dark:text-green-300">
-              Paleta {i + 1}: {alloc.pallet.displayName || alloc.pallet.id}
-            </h3>
-            <span className="text-lg font-bold text-green-800 dark:text-green-300">
-              {alloc.priceBreakdown.grossTotal} PLN
-            </span>
-          </div>
-
-          <div className="mb-4 flex justify-center bg-white rounded-lg py-4 border">
-            <PalletVisualizer allocation={alloc} className="max-w-xs" />
-          </div>
-
-          {/* Layout notes */}
-          {alloc.layoutNotes.length > 0 && (
-            <div className="mb-2 rounded bg-amber-100 p-2 dark:bg-amber-900/30">
-              {alloc.layoutNotes.map((note, j) => (
-                <p key={j} className="text-xs text-amber-700 dark:text-amber-400">{note}</p>
-              ))}
-            </div>
-          )}
-
-          {/* Items with orientation and warnings */}
-          <div className="space-y-2">
-            {alloc.items.map((placement, j) => (
-              <div key={j} className="border-l-2 border-green-300 pl-2">
-                <p className="text-sm font-medium">
-                  {placement.item.name}
-                  <span className="text-muted-foreground ml-1">
-                    ({placement.item.lengthCm}×{placement.item.widthCm}×{placement.item.heightCm}cm)
-                  </span>
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  📐 Podstawa: {placement.footprintLengthCm}×{placement.footprintWidthCm}cm,
-                  wysokość: {placement.heightCm}cm
-                  {placement.orientationLabel !== 'Normalnie' && (
-                    <span className="ml-1 text-blue-600"> • {placement.orientationLabel}</span>
-                  )}
-                </p>
-                {placement.warnings.length > 0 && (
-                  <div className="mt-1">
-                    {placement.warnings.map((w, k) => (
-                      <p key={k} className="text-xs text-amber-600">⚠️ {w}</p>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <p className="text-xs text-muted-foreground mt-2 pt-2 border-t">
-            Łączna waga: {alloc.totalWeightKg}kg
-          </p>
-        </div>
-      ))}
-
-      {/* Unallocated */}
-      {result.unallocated.length > 0 && (
-        <div className="rounded-lg bg-red-100 p-4 dark:bg-red-900">
-          <h3 className="font-medium text-red-700 dark:text-red-300 mb-2">
-            ❌ Nie zmieszczone:
-          </h3>
-          {result.unallocated.map((entry, i) => (
-            <div key={i} className="text-sm text-red-600 dark:text-red-400 mb-2">
-              <p className="font-medium">• {entry.item.name} ({entry.item.lengthCm}×{entry.item.widthCm}×{entry.item.heightCm}cm)</p>
-              <p className="text-xs ml-3 text-red-500">{entry.details || entry.reason}</p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
   );
 }

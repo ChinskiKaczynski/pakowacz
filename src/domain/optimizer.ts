@@ -15,10 +15,9 @@ import {
     check3DFit,
     palletDimensionsToCm,
     getEffectiveLimits,
-    findRate,
-    calculatePrice,
     isNearLimit,
 } from './helpers';
+import { findRate, calculatePrice } from './pricing';
 
 // Helper to get human-readable orientation description
 function getOrientationLabel(orientation: ItemOrientation): string | null {

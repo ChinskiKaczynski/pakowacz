@@ -12,7 +12,7 @@ import { optimize } from '@/domain/optimizer';
 import { optimizeMultiItem } from '@/domain/binPacking';
 import { APP_CONFIG } from '@/config/constants';
 import { calculateCarryPrice, type CarryPriceResult } from '@/domain/carryService';
-import type { CalculationInput, OptimizerResult, FurnitureItem, MultiItemResult, DistanceBand, RateTableConfig, PalletTypesConfig } from '@/domain/types';
+import type { CalculationInput, OptimizerResult, FurnitureItem, MultiItemResult, DistanceBand, RateTableConfig, PalletTypesConfig, PalletAllocation, ItemPlacement, ItemOrientation } from '@/domain/types';
 import palletTypes from '@/config/pallet_types.json';
 import rateTable from '@/config/rate_table.json';
 import todConfig from '@/config/tod_config.json';
@@ -341,39 +341,121 @@ Razem brutto: ${result.multiResult.totalGross} PLN
                   </div>
                 )}
 
-                {result.optimizerResult.recommended && (
-                  <>
-                    <SimplePriceCard
-                      pricing={result.optimizerResult.recommended.priceBreakdown}
-                      palletName={result.optimizerResult.recommended.pallet.displayName || result.optimizerResult.recommended.pallet.id}
-                      palletDimensions={`${result.optimizerResult.recommended.pallet.lengthM}m × ${result.optimizerResult.recommended.pallet.widthM}m`}
-                      category={getCategoryName(result.optimizerResult.recommended.pallet.category)}
-                      orientationLabel={result.optimizerResult.recommended.orientationLabel}
-                      warnings={result.optimizerResult.recommended.warnings}
-                      carryPrice={result.carryPrice}
-                    />
+                {result.optimizerResult.recommended && (() => {
+                  // Create allocation for visualization
+                  const rec = result.optimizerResult.recommended;
+                  const pallet = rec.pallet;
+                  const palletWidthCm = pallet.widthM * 100;
+                  const palletLengthCm = pallet.lengthM * 100;
+                  const margin = result.input.packagingMarginCm;
 
-                    {/* Add more items button */}
-                    <Button
-                      variant="secondary"
-                      className="w-full"
-                      onClick={() => {
-                        handleAddItem(result.input);
-                        setResult(null);
-                      }}
-                    >
-                      ➕ Dodaj kolejny mebel do wysyłki
-                    </Button>
+                  // Calculate footprint based on orientation
+                  const getFootprint = (l: number, w: number, h: number, orient: ItemOrientation) => {
+                    switch (orient) {
+                      case 'normal':
+                      case 'rotated':
+                        return orient === 'normal'
+                          ? { length: l + margin, width: w + margin, height: h }
+                          : { length: w + margin, width: l + margin, height: h };
+                      case 'tiltedOnSide':
+                      case 'tiltedOnSideRotated':
+                        return orient === 'tiltedOnSide'
+                          ? { length: l + margin, width: h + margin, height: w }
+                          : { length: h + margin, width: l + margin, height: w };
+                      case 'tiltedOnEnd':
+                      case 'tiltedOnEndRotated':
+                        return orient === 'tiltedOnEnd'
+                          ? { length: w + margin, width: h + margin, height: l }
+                          : { length: h + margin, width: w + margin, height: l };
+                      default:
+                        return { length: l + margin, width: w + margin, height: h };
+                    }
+                  };
 
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={handleCopyResult}
-                    >
-                      {copied ? '✓ Skopiowano!' : '📋 Kopiuj wynik'}
-                    </Button>
-                  </>
-                )}
+                  // Determine orientation from label - need to handle all 6 cases
+                  let orientation: ItemOrientation = 'normal';
+                  const label = rec.orientationLabel || '';
+                  const isRotated = label.includes('obrócony') || label.includes('Obrócony');
+
+                  if (label.includes('Na boku')) {
+                    orientation = isRotated ? 'tiltedOnSideRotated' : 'tiltedOnSide';
+                  } else if (label.includes('Na końcu')) {
+                    orientation = isRotated ? 'tiltedOnEndRotated' : 'tiltedOnEnd';
+                  } else if (isRotated) {
+                    orientation = 'rotated';
+                  }
+
+                  const footprint = getFootprint(
+                    result.input.lengthCm,
+                    result.input.widthCm,
+                    result.input.heightCm,
+                    orientation
+                  );
+
+                  // Center item on pallet
+                  const posX = (palletWidthCm - footprint.width) / 2;
+                  const posY = (palletLengthCm - footprint.length) / 2;
+
+                  const allocation: PalletAllocation = {
+                    pallet,
+                    items: [{
+                      item: {
+                        id: 'single-item',
+                        name: 'Mebel',
+                        lengthCm: result.input.lengthCm,
+                        widthCm: result.input.widthCm,
+                        heightCm: result.input.heightCm,
+                        weightKg: result.input.weightKg,
+                      },
+                      orientation,
+                      orientationLabel: rec.orientationLabel || 'Normalnie',
+                      warnings: rec.warnings,
+                      footprintLengthCm: footprint.length,
+                      footprintWidthCm: footprint.width,
+                      heightCm: footprint.height,
+                      positionX: posX,
+                      positionY: posY,
+                    }],
+                    totalWeightKg: result.input.weightKg,
+                    priceBreakdown: rec.priceBreakdown,
+                    layoutNotes: [],
+                  };
+
+                  return (
+                    <>
+                      <SimplePriceCard
+                        pricing={rec.priceBreakdown}
+                        palletName={pallet.displayName || pallet.id}
+                        palletDimensions={`${pallet.lengthM}m × ${pallet.widthM}m`}
+                        category={getCategoryName(pallet.category)}
+                        orientationLabel={rec.orientationLabel}
+                        warnings={rec.warnings}
+                        carryPrice={result.carryPrice}
+                        allocation={allocation}
+                      />
+
+                      {/* Add more items button */}
+                      <Button
+                        variant="secondary"
+                        className="w-full"
+                        onClick={() => {
+                          handleAddItem(result.input);
+                          setResult(null);
+                        }}
+                      >
+                        ➕ Dodaj kolejny mebel do wysyłki
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={handleCopyResult}
+                      >
+                        {copied ? '✓ Skopiowano!' : '📋 Kopiuj wynik'}
+                      </Button>
+                    </>
+                  );
+                })()}
 
                 <AlternativesSection alternatives={result.optimizerResult.alternatives} />
                 <RejectedSection rejected={result.optimizerResult.rejected} />

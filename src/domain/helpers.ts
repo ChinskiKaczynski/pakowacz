@@ -34,19 +34,21 @@ export function check3DFit(
     itemHeightCm: number,
     palletLengthCm: number,
     palletWidthCm: number,
-    maxHeightCm: number
+    maxHeightCm: number,
+    packagingMarginCm: number = 0 // Optional margin for footprint dimensions
 ): FitResult {
     // All possible orientations: [footprintL, footprintW, resultingHeight, orientation]
+    // Packaging margin is applied only to footprint dimensions, NOT to height
     const orientations: [number, number, number, ItemOrientation][] = [
-        // Normal standing position
-        [itemLengthCm, itemWidthCm, itemHeightCm, 'normal'],
-        [itemWidthCm, itemLengthCm, itemHeightCm, 'rotated'],
-        // Tilted on side (laying on the L×H face)
-        [itemLengthCm, itemHeightCm, itemWidthCm, 'tiltedOnSide'],
-        [itemHeightCm, itemLengthCm, itemWidthCm, 'tiltedOnSideRotated'],
-        // Tilted on end (standing on W×H face)
-        [itemWidthCm, itemHeightCm, itemLengthCm, 'tiltedOnEnd'],
-        [itemHeightCm, itemWidthCm, itemLengthCm, 'tiltedOnEndRotated'],
+        // Normal standing position - L×W is footprint, H is height
+        [itemLengthCm + packagingMarginCm, itemWidthCm + packagingMarginCm, itemHeightCm, 'normal'],
+        [itemWidthCm + packagingMarginCm, itemLengthCm + packagingMarginCm, itemHeightCm, 'rotated'],
+        // Tilted on side (laying on the L×H face) - L×H is footprint, W is height
+        [itemLengthCm + packagingMarginCm, itemHeightCm + packagingMarginCm, itemWidthCm, 'tiltedOnSide'],
+        [itemHeightCm + packagingMarginCm, itemLengthCm + packagingMarginCm, itemWidthCm, 'tiltedOnSideRotated'],
+        // Tilted on end (standing on W×H face) - W×H is footprint, L is height
+        [itemWidthCm + packagingMarginCm, itemHeightCm + packagingMarginCm, itemLengthCm, 'tiltedOnEnd'],
+        [itemHeightCm + packagingMarginCm, itemWidthCm + packagingMarginCm, itemLengthCm, 'tiltedOnEndRotated'],
     ];
 
     for (const [footL, footW, height, orientation] of orientations) {

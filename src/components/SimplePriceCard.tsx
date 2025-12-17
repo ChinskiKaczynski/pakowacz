@@ -1,6 +1,7 @@
-import { PriceBreakdown } from '@/domain/types';
+import { PriceBreakdown, PalletAllocation } from '@/domain/types';
 import { APP_CONFIG } from '@/config/constants';
 import type { CarryPriceResult } from '@/domain/carryService';
+import { PalletVisualizer } from '@/components/PalletVisualizer';
 
 interface SimplePriceCardProps {
     pricing: PriceBreakdown;
@@ -10,6 +11,8 @@ interface SimplePriceCardProps {
     orientationLabel: string | null;
     warnings: string[];
     carryPrice?: CarryPriceResult;
+    /** Optional allocation for pallet visualization */
+    allocation?: PalletAllocation;
 }
 
 export function SimplePriceCard({
@@ -20,6 +23,7 @@ export function SimplePriceCard({
     orientationLabel,
     warnings,
     carryPrice,
+    allocation,
 }: SimplePriceCardProps) {
     // Calculate combined totals with VAT from combined net (transport + carry)
     const transportNet = parseFloat(pricing.netTotal);
@@ -53,6 +57,13 @@ export function SimplePriceCard({
                     <p className="text-xs text-muted-foreground">brutto</p>
                 </div>
             </div>
+
+            {/* Pallet visualization */}
+            {allocation && (
+                <div className="mb-4 flex justify-center bg-white rounded-lg py-4 border">
+                    <PalletVisualizer allocation={allocation} className="max-w-xs" />
+                </div>
+            )}
 
             {warnings.length > 0 && (
                 <div className="mb-3 rounded bg-amber-100 p-2 dark:bg-amber-900/30">

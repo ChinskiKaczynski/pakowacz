@@ -40,24 +40,24 @@ function itemFitsOnPallet(
     marginCm: number,
     options: { lift: boolean; van35: boolean }
 ): { fits: boolean; orientation: ItemOrientation } {
-    const dims = getEffectiveDimensions(item, marginCm);
     const palletCm = palletDimensionsToCm(pallet);
     const limits = getEffectiveLimits(options, pallet.maxHeightCm, pallet.maxWeightKg);
     const availableHeight = limits.maxHeightCm - PALLET_BASE_HEIGHT_CM;
 
     // Check weight first
-    if (dims.weightKg > limits.maxWeightKg) {
+    if (item.weightKg > limits.maxWeightKg) {
         return { fits: false, orientation: 'normal' };
     }
 
-    // Check 3D fit
+    // Check 3D fit - pass original dimensions with margin for footprint only
     const fitResult = check3DFit(
-        dims.lengthCm,
-        dims.widthCm,
-        dims.heightCm,
+        item.lengthCm,
+        item.widthCm,
+        item.heightCm,
         palletCm.lengthCm,
         palletCm.widthCm,
-        availableHeight
+        availableHeight,
+        marginCm // Margin applied only to footprint, not height
     );
 
     return { fits: fitResult.fits, orientation: fitResult.orientation };
@@ -93,20 +93,23 @@ function canAllFitOnOnePallet(
 
     // First pass: Check if each item fits individually in some orientation
     for (const item of items) {
-        const dims = getEffectiveDimensions(item, marginCm);
+        // Pass original dimensions with margin for footprint only
         const fitResult = check3DFit(
-            dims.lengthCm,
-            dims.widthCm,
-            dims.heightCm,
+            item.lengthCm,
+            item.widthCm,
+            item.heightCm,
             palletCm.lengthCm,
             palletCm.widthCm,
-            availableHeight
+            availableHeight,
+            marginCm // Margin applied only to footprint, not height
         );
 
         if (!fitResult.fits) {
             return { fits: false, placements: [], layoutNotes: [`${item.name} nie mieści się`] };
         }
 
+        // Get dims with margin for footprint calculation (margin on all non-height dims)
+        const dims = getEffectiveDimensions(item, marginCm);
         const footprint = getFootprintForOrientation(dims, fitResult.orientation);
         const orientationLabel = getOrientationLabel(fitResult.orientation);
         const itemWarnings: string[] = [];

@@ -50,11 +50,6 @@ export function optimize(
     const candidates: MatchResult[] = [];
     const rejected: RejectedResult[] = [];
 
-    // Calculate effective item dimensions with packaging margin
-    const effectiveLengthCm = input.lengthCm + input.packagingMarginCm;
-    const effectiveWidthCm = input.widthCm + input.packagingMarginCm;
-    const effectiveHeightCm = input.heightCm; // Height doesn't get margin
-
     for (const pallet of palletTypes.pallets) {
         const rejectionReasons: RejectionReason[] = [];
         const warnings: string[] = [];
@@ -72,14 +67,16 @@ export function optimize(
         // Check if item fits on pallet using 3D rotation
         // This considers tilting the item on its side/end to fit smaller pallets
         // Subtract pallet base height from max height limit (item + pallet must fit)
+        // Pass original dimensions + margin separately so margin is only applied to footprint
         const availableHeightCm = limits.maxHeightCm - 15; // 15cm pallet base
         const fitResult = check3DFit(
-            effectiveLengthCm,
-            effectiveWidthCm,
-            effectiveHeightCm,
+            input.lengthCm,
+            input.widthCm,
+            input.heightCm,
             palletCm.lengthCm,
             palletCm.widthCm,
-            availableHeightCm
+            availableHeightCm,
+            input.packagingMarginCm // Margin applied only to footprint, not height
         );
 
         if (!fitResult.fits) {

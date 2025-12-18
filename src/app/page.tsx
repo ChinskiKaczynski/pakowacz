@@ -349,26 +349,27 @@ Razem brutto: ${result.multiResult.totalGross} PLN
                   const palletLengthCm = pallet.lengthM * 100;
                   const margin = result.input.packagingMarginCm;
 
-                  // Calculate footprint based on orientation
+                  // Get footprint dimensions for a given orientation
+                  // Matches getFootprintForOrientation from binPacking.ts
                   const getFootprint = (l: number, w: number, h: number, orient: ItemOrientation) => {
+                    // Apply margin to dimensions first (matching getEffectiveDimensions in binPacking)
+                    const lm = l + margin;
+                    const wm = w + margin;
                     switch (orient) {
                       case 'normal':
+                        return { length: lm, width: wm, height: h };
                       case 'rotated':
-                        return orient === 'normal'
-                          ? { length: l + margin, width: w + margin, height: h }
-                          : { length: w + margin, width: l + margin, height: h };
+                        return { length: wm, width: lm, height: h };
                       case 'tiltedOnSide':
+                        return { length: lm, width: h, height: w };
                       case 'tiltedOnSideRotated':
-                        return orient === 'tiltedOnSide'
-                          ? { length: l + margin, width: h + margin, height: w }
-                          : { length: h + margin, width: l + margin, height: w };
+                        return { length: h, width: lm, height: w };
                       case 'tiltedOnEnd':
+                        return { length: wm, width: h, height: l };
                       case 'tiltedOnEndRotated':
-                        return orient === 'tiltedOnEnd'
-                          ? { length: w + margin, width: h + margin, height: l }
-                          : { length: h + margin, width: w + margin, height: l };
+                        return { length: h, width: wm, height: l };
                       default:
-                        return { length: l + margin, width: w + margin, height: h };
+                        return { length: lm, width: wm, height: h };
                     }
                   };
 
@@ -393,6 +394,7 @@ Razem brutto: ${result.multiResult.totalGross} PLN
                   );
 
                   // Center item on pallet
+                  // footprintWidthCm is X dimension, footprintLengthCm is Y dimension (matching binPacking.ts)
                   const posX = (palletWidthCm - footprint.width) / 2;
                   const posY = (palletLengthCm - footprint.length) / 2;
 
@@ -410,8 +412,9 @@ Razem brutto: ${result.multiResult.totalGross} PLN
                       orientation,
                       orientationLabel: rec.orientationLabel || 'Normalnie',
                       warnings: rec.warnings,
-                      footprintLengthCm: footprint.length,
+                      // footprintWidthCm is X dimension (width in SVG), footprintLengthCm is Y dimension (height in SVG)
                       footprintWidthCm: footprint.width,
+                      footprintLengthCm: footprint.length,
                       heightCm: footprint.height,
                       positionX: posX,
                       positionY: posY,
